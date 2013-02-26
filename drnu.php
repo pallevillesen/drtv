@@ -190,14 +190,6 @@ function show_single_video($id) {
 		}
 	}
 	#
-	# New column
-	#
-	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
-	echo '<h3><a href="?slug='.$Slug.'">'.$JsonContent["title"].'</a></h3>';
-	echo "<p>Varighed ".$JsonContent["duration"]."</p>";             
-	echo "<p>Sendt ".$JsonContent["formattedBroadcastTimeForTVSchedule"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
-	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
-	#
 	# Video links
 	#
 	# mp4 link - best quality
@@ -206,7 +198,7 @@ function show_single_video($id) {
 	$LinkCut = substr($videoManifestUrl, $pos);     
 	$mp4 = 'http://vodfiles.dr.dk/'.$LinkCut;
 	echo "<h1>";
-	echo "Play video: <a href='".$mp4."'>Mp4</a>";
+	echo "Afspil: <a href='".$mp4."'>Mp4</a>";
 	echo " - ";
 	# RTMP links
 	echo '<a href="'.$videoManifestUrl.'">RTMP</a>';
@@ -216,7 +208,18 @@ function show_single_video($id) {
 	$VideoManifestUrlCut = substr($JsonContent["videoManifestUrl"], 0, $pos);
 	echo '<a href="'.$VideoManifestUrlCut.'">FLASH</a>';
 	echo "</h1>";
+	#
+	# Information about video
+	#
+	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
+	echo "<p>";
+	echo $JsonContent["title"];
+	echo ' <a href="?slug='.$Slug.'">[ Se alle i serien]</a>';
+	echo "</p>";
 	echo "<p>".$JsonContent["description"]."</p>"; 
+	echo "<p>Varighed ".$JsonContent["duration"]."</p>";             
+	echo "<p>Sendt ".$JsonContent["formattedBroadcastTimeForTVSchedule"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
+	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
 	echo "</div>\n";
 	# Links to videos
 	if ($_GET["debug"]) {
