@@ -1,11 +1,11 @@
 <!DOCTYPE html> 
 <html> 
 <head> 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
-    <title>DR NU</title> 
-    <style type="text/css">     
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
+	<title>DR NU</title> 
+	<style type="text/css">     
 	body {
-     	        font-family: Arial, Helvetica, Sanserif;
+				font-family: Arial, Helvetica, Sanserif;
 		font-size: 1em;
 		text-decoration: none; 
 		margin: 0px 20px 10px 20px;
@@ -13,17 +13,14 @@
 		background-color: #000;
 		color:#FFF;
 	}
-
 	a {
 	color: #FFF;
 	}
-
-	img {         
-          text-align: top-left; 
-          float: left; 
-	  padding: 0px 10px 10px 0px;
-	}     
-
+	img {
+		text-align: top-left; 
+		float: left; 
+		padding: 0px 10px 10px 0px;
+	}
 	.menu {
 		float: left; 
 		margin: 0px 10px 0px 10px;
@@ -33,32 +30,28 @@
 		padding: 20px 5px 5px 5px;
 		text-decoration: none;
 	}
-	
 	#all_programs  {
-	  border-collapse:collapse;
+		border-collapse:collapse;
 	}
 	#all_programs td ,#all_programs th {
-	  border-left:0px;
-	  border-right:0px;
-	  border-top: 1px solid #fff;
-	  border-bottom: 1px solid #aaa;
-	  padding:5px 7px 5px 7px;
+		border-left:0px;
+		border-right:0px;
+		border-top: 1px solid #fff;
+		border-bottom: 1px solid #aaa;
+		padding:5px 7px 5px 7px;
 	}
-
 	#all_programs th {
-	  font-size:1.1em;
-	  text-align:left;
-	  padding-top:5px;
-	  padding-bottom:4px;
-	  background-color:#eee;
-	  color:#111;
+		font-size:1.1em;
+		text-align:left;
+		padding-top:5px;
+		padding-bottom:4px;
+		background-color:#eee;
+		color:#111;
 	}
-
 	.text_line {
-	clear:both;
-	margin-bottom:2px;
+		clear:both;
+		margin-bottom:2px;
 	}
-	
 	.w { 
 		width: 320px;
 		height: 360px;
@@ -67,7 +60,6 @@
 		margin: 10px 10px 10px 10px;
 		padding: 10px 10px 10px 10px;
 	}
-	
 	.single_video_container {
 		width: 640px;
 		float: left; 
@@ -100,7 +92,6 @@ function showseries() {
 		echo " - ";
 	}
 	echo "<a href='#".$letters[count($letters)-1]."'>".$letters[count($letters)-1]."</a><p>";
-
 	echo "<table id='all_programs'>";
 	echo "<tr><th>Antal&nbsp;</th><th>Serie</th><th>Sidst tilføjet</th><th>Labels</th></tr>\n";
 	$oldletter="";
@@ -113,7 +104,7 @@ function showseries() {
 		$newletter = preg_split('/(?<!^)(?!$)/u', $JsonContent[$i]["title"]);
 		$newletter = $newletter[0]; # first character - multi-byte safe (UTF-8)
 		echo "<tr>";
-                echo "<td align=left>";
+				echo "<td align=left>";
 		echo $JsonContent[$i]["videoCount"];
 		echo "</td>";
 		echo "<td>";
@@ -123,9 +114,8 @@ function showseries() {
 		}
 		echo '<a href="'.$videolink.'">'.$JsonContent[$i]["title"].'</a>';
 		echo "</td>";
-                echo "<td>";
+				echo "<td>";
 		#echo $JsonContent[$i]["newestVideoPublishTime"];
-
 		$video_date = explode("T",$JsonContent[$i]["newestVideoPublishTime"] );
 		echo $video_date[0];
 		echo "</td><td>";
@@ -138,8 +128,6 @@ function showseries() {
 	echo "\n";
 	return;
 }
-
-
 
 function showvideos($slug="videos/newest") {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug), true); 
@@ -167,9 +155,9 @@ function showvideos($slug="videos/newest") {
 		echo '<a href="'.$videolink.'">Se alle i serien</a>';
 		echo "</p>";
 		echo "</div>\n";
-    }
+	}
 	return;
-}  
+}
 
 function show_single_video($id) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/videos/".$id), true); 
@@ -204,13 +192,12 @@ function show_single_video($id) {
 	#
 	# New column
 	#
-	
 	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
 	echo '<h3><a href="?slug='.$Slug.'">'.$JsonContent["title"].'</a></h3>';
 	echo "<p>Varighed ".$JsonContent["duration"]."</p>";             
 	echo "<p>Sendt ".$JsonContent["formattedBroadcastTimeForTVSchedule"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
 	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
-		#
+	#
 	# Video links
 	#
 	# mp4 link - best quality
@@ -230,7 +217,6 @@ function show_single_video($id) {
 	echo '<a href="'.$VideoManifestUrlCut.'">FLASH</a>';
 	echo "</h1>";
 	echo "<p>".$JsonContent["description"]."</p>"; 
-
 	echo "</div>\n";
 	# Links to videos
 	if ($_GET["debug"]) {
@@ -281,9 +267,9 @@ showmenu();
 if ($id) {
 	show_single_video($id);
 } elseif ($slug=="programseries") {
-		showseries();
+	showseries();
 } else {
-		showvideos($slug);
+	showvideos($slug);
 }
 
 ?>  
