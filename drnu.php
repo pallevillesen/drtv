@@ -26,8 +26,20 @@
 		margin: 0px 10px 0px 10px;
 		background:#555;
 		color: #EEE;
-		font-size: 1.2em;
-		padding: 20px 5px 5px 5px;
+		font-size: 1em;
+		font-weight: bold;
+		padding: 50px 5px 5px 5px;
+		text-decoration: none;
+	}
+	
+	.menu2 {
+		float: right; 
+		margin: 0px 10px 0px 10px;
+		background:#555;
+		color: #EEE;
+		font-size: 1em;
+		font-weight: bold;
+		padding: 50px 5px 5px 5px;
 		text-decoration: none;
 	}
 	#all_programs  {
@@ -79,9 +91,9 @@ function showmenu($slug, $links) {
 	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Udløber snart</a>';
 	print '<a class="menu" href="?slug=programseries&links='.$links.'">Alle programmer</a>';
 	if ($links=="on") {
-		print '<a class=menu href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=off">Hide direct title links</a>';
+		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=off">Hide direct title links</a>';
 	} else {
-		print '<a class=menu href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=on">Show direct title links</a>';
+		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=on">Show direct title links</a>';
 	}
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	return ;
@@ -100,6 +112,7 @@ function showseries($slug, $links) {
 	echo "<table id='all_programs'>";
 	echo "<tr><th>Antal&nbsp;</th><th>Serie</th><th>Sidst tilføjet</th><th>Labels</th></tr>\n";
 	$oldletter="";
+	$j=0;
 	for($i=0; $i<$lng; $i++){             
 		$Slug="programseries/".$JsonContent[$i]["slug"]."/videos";      
 		$videolink = "?id=".$JsonContent[$i]["newestVideoId"]."&links=".$links;
@@ -107,19 +120,20 @@ function showseries($slug, $links) {
 			$videolink = "?slug=".$Slug."&links=".$links;
 		}
 		$newletter = preg_split('/(?<!^)(?!$)/u', $JsonContent[$i]["title"]);
-		$newletter = $newletter[0]; # first character - multi-byte safe (UTF-8)
+		$newletter = strtoupper($newletter[0]); # first character - multi-byte safe (UTF-8)
 		echo "<tr>";
 				echo "<td align=left>";
 		echo $JsonContent[$i]["videoCount"];
 		echo "</td>";
 		echo "<td>";
-		if ($newletter !== $oldletter) {
-			echo "\n<a name='$newletter'>\n";
-			$oldletter = $newletter;
+		while ($newletter != $oldletter & $j < count($letters) ) {
+			$oldletter=$letters[$j];
+			echo "\n<a name='$oldletter'>\n";
+			$j = $j +1;
 		}
 		echo '<a href="'.$videolink.'">'.$JsonContent[$i]["title"].'</a>';
 		echo "</td>";
-				echo "<td>";
+		echo "<td>";
 		$video_date = explode("T",$JsonContent[$i]["newestVideoPublishTime"] );
 		echo $video_date[0];
 		echo "</td><td>";
