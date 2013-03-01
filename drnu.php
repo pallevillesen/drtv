@@ -82,7 +82,6 @@ img {
 </head> 
 <body>
 <?php 
-
 function showmenu($slug, $links) {
 	print '<a class="menu" href="?slug=videos/premiere&links='.$links.'">Premiere</a>';
 	print '<a class="menu" href="?slug=videos/newest&links='.$links.'">Nyt på DR NU</a>';
@@ -97,7 +96,6 @@ function showmenu($slug, $links) {
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	return ;
 }
-
 function showseries($slug, $links) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/programseries"), true);    
 	$lng = count($JsonContent);     
@@ -145,7 +143,6 @@ function showseries($slug, $links) {
 	echo "\n";
 	return;
 }
-
 function showvideos($slug="videos/newest", $links) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug), true); 
 	$lng = count($JsonContent); 
@@ -176,7 +173,6 @@ function showvideos($slug="videos/newest", $links) {
 	}
 	return;
 }
-
 function get_mp4link_by_id($id) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/videos/".$id), true); 
 	$videoManifestUrl = file_get_contents($JsonContent["videoManifestUrl"]);
@@ -187,7 +183,6 @@ function get_mp4link_by_id($id) {
 		return $mp4;
 	}
 }
-
 function show_single_video($id, $links) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/videos/".$id), true); 
 	$videoManifestUrl = file_get_contents($JsonContent["videoManifestUrl"]); # Get the rtmplinks
@@ -226,24 +221,16 @@ function show_single_video($id, $links) {
 	echo "</div>\n";
 return;
 }
-
 # Actual start of web page
 $links=$_GET["links"];
 $id=$_GET["id"];
 $slug=$_GET["slug"];
 if ($links != "on") $links="off";
 if (!$slug) $slug="videos/newest";
-
 showmenu($slug, $links);
-
-if ($id) {
-	show_single_video($id, $links);
-} elseif ($slug=="programseries") {
-	showseries($slug, $links);
-} else {
-	showvideos($slug, $links);
-}
-
+if ($id) show_single_video($id, $links);
+elseif ($slug=="programseries") showseries($slug, $links);
+else  showvideos($slug, $links);
 ?>  
 </body> 
 </html>
