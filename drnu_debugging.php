@@ -120,6 +120,7 @@ function showseries($slug, $links) {
 		echo '<a href="'.$videolink.'">'.$JsonContent[$i]["title"].'</a>';
 		echo "</td>";
 				echo "<td>";
+		#echo $JsonContent[$i]["newestVideoPublishTime"];
 		$video_date = explode("T",$JsonContent[$i]["newestVideoPublishTime"] );
 		echo $video_date[0];
 		echo "</td><td>";
@@ -185,10 +186,34 @@ function show_single_video($id, $links) {
 	$height=360;
 	$thumbnail = $width."x".$height.".jpg"; 
 	$url = 'http://www.dr.dk/nu/api/videos/'.$id.'/images' ;
+	# New column
 	echo "<div class='single_video_container'>";
 	echo "<img width=$width height=$height src=\"$url/$thumbnail\" alt='' />";
 	print "<p class='text_line'></p>\n";
+	if ($_GET["debug"]) {
+		# Mp4 links
+		echo "<P>Debug: mp4 links</p>";
+		echo '<p><a href="'.$videoManifestUrl.'">videoManifestUrl: '.$videoManifestUrl.'</a></p>';
+		$SubJsonContent = json_decode(file_get_contents($JsonContent["videoResourceUrl"]), true); 
+		$suburls = $SubJsonContent["links"];
+		# RTMP link
+		$pos = strpos($videoManifestUrl, "mp4:CMS/Resources/");     
+		$LinkCut = substr($videoManifestUrl, $pos);     
+		$rtmp = 'rtmp://vod.dr.dk/'.$LinkCut;
+		echo "<p><a href='".$rtmp."'>$rtmp</a> XBMC recoding of rtmp stream (?)</p>";
+		for($i=0; $i<count($suburls); $i++){ 
+			$SubUrl2 = $suburls[$i]["uri"];  
+			$pos = strpos($SubUrl2, "CMS/Resources/");     
+			$LinkCut = substr($SubUrl2, $pos);     
+			$mp4 = 'http://vodfiles.dr.dk/'.$LinkCut;
+			echo "<p><a href='".$mp4."'>Play video (mp4 bitrate: ".$suburls[$i]["bitrateKbps"].")</a></p>";
+		}
+	}
+	#
 	# Video links
+	#
+	# mp4 link - best quality
+	# rtmp://vod.dr.dk/cms/mp4:CMS/Resources/dr.dk/NETTV/DR1/2012/10/02926da5-cd7e-4f2e-bd15-e71663cc8978/dae406f2abd84233a1e4279f5c762528_1428.mp4?ID=1280881
 	$pos = strpos($videoManifestUrl, "CMS/Resources/");     
 	$LinkCut = substr($videoManifestUrl, $pos);     
 	$mp4 = 'http://vodfiles.dr.dk/'.$LinkCut;
@@ -203,7 +228,9 @@ function show_single_video($id, $links) {
 	$VideoManifestUrlCut = substr($JsonContent["videoManifestUrl"], 0, $pos);
 	echo '<a href="'.$VideoManifestUrlCut.'">FLASH</a>';
 	echo "</h1>";
+	#
 	# Information about video
+	#
 	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
 	echo "<p>";
 	echo $JsonContent["title"];
@@ -214,6 +241,40 @@ function show_single_video($id, $links) {
 	echo "<p>Sendt ".$JsonContent["formattedBroadcastTimeForTVSchedule"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
 	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
 	echo "</div>\n";
+	# Links to videos
+	if ($_GET["debug"]) {
+		echo "<table>";
+		echo "<tr><td colspan=2>";
+		echo '<p><a href="'.$JsonContent["videoManifestUrl"].'">videoManifestUrl: '.$JsonContent["videoManifestUrl"].'</a> Will write rtmp link</p>';
+		echo '<p><a href="'.$VideoManifestUrlCut.'">VideoManifestUrlCut: '.$VideoManifestUrlCut.'</a> Will open flash player</p>';
+		echo '<p><a href="'.$JsonContent["videoResourceUrl"].'">videoResourceUrl: '.$JsonContent["videoResourceUrl"].'</a> Used for getting streaming links --> mp4 links</p>';
+		$suburls = $SubJsonContent["links"];
+		for($i=0; $i<count($suburls); $i++){ 
+			$SubUrl2 = $suburls[$i]["uri"];  
+			$pos = strpos($SubUrl2, "CMS/Resources/");     
+			$LinkCut = substr($SubUrl2, $pos);     
+			$mp4 = 'http://vodfiles.dr.dk/'.$LinkCut;
+			echo "<p><a href='".$mp4."'>MP4 link $i: ".$mp4."</a> Bitrate: ".$suburls[$i]["bitrateKbps"]."</p>";
+		}
+		for($i=0; $i<count($suburls); $i++){ 
+			echo '<h1>Content of $SubJsonContent["links"]['.$i.']</h1>';
+			foreach (array_keys($suburls[$i]) as $key){
+				echo "<p>";
+				echo $key;
+				echo $suburls[$i][$key];
+				echo "</p>";
+			}
+		}
+		echo "</td></tr>";
+		echo '<tr><td><h1>Loop through $JsonContent</td></tr></h1>';
+		foreach (array_keys($JsonContent) as $key){
+			echo "<tr>";
+			echo "<td>".$key."</td>";
+			echo "<td>".$JsonContent[$key]."</td>";
+			echo "</tr>\n";
+		}
+		echo "</table>";
+	}
 return;
 }
 
