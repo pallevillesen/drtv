@@ -16,6 +16,13 @@ body {
 a {
 color: #FFF;
 }
+
+input { background-color: #444;
+	border-collapse:collapse;
+	border:1px solid #000;
+	color: #EEE;
+}
+
 img {
 	text-align: top-left; 
 	float: left; 
@@ -88,6 +95,10 @@ function showmenu($slug, $links) {
 	print '<a class="menu" href="?slug=videos/mostviewed&links='.$links.'">Mest sete</a>';
 	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Udløber snart</a>';
 	print '<a class="menu" href="?slug=programseries&links='.$links.'">Alle programmer</a>';
+	print '<form class="menu" method=POST action="?slug=search&links='.$links.'">';
+	print '<INPUT type=text name=q size=25 maxlength=255 value="'.$_POST["q"].'">';
+	print '<input type="submit" value="Søg">';
+	print '</form>';
 	if ($links=="on") {
 		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=off">Hide direct title links</a>';
 	} else {
@@ -226,7 +237,10 @@ $links=$_GET["links"];
 $id=$_GET["id"];
 $slug=$_GET["slug"];
 if ($links != "on") $links="off";
-if (!$slug) $slug="videos/newest";
+if (!$slug) $slug="videos/newest"; # If no slug defined, default to newest videos
+if ($slug=="search" & !$_POST["q"]) $slug="programseries"; # Empty search takes you to the big table instead
+if ($slug=="search") $slug="search/".$_POST["q"]; 
+# Now create the page
 showmenu($slug, $links);
 if ($id) show_single_video($id, $links);
 elseif ($slug=="programseries") showseries($slug, $links);
