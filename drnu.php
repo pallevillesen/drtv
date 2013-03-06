@@ -91,18 +91,18 @@ img {
 <?php 
 function showmenu($slug, $links) {
 	print '<a class="menu" href="?slug=videos/premiere&links='.$links.'">Premiere</a>';
-	print '<a class="menu" href="?slug=videos/newest&links='.$links.'">Nyt på DR NU</a>';
+	print '<a class="menu" href="?slug=videos/newest&links='.$links.'">Nyeste</a>';
 	print '<a class="menu" href="?slug=videos/mostviewed&links='.$links.'">Mest sete</a>';
-	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Udløber snart</a>';
-	print '<a class="menu" href="?slug=programseries&links='.$links.'">Alle programmer</a>';
+	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Udløber</a>';
+	print '<a class="menu" href="?slug=programseries&links='.$links.'">Oversigt</a>';
 	print '<form class="menu" method=POST action="?slug=search&links='.$links.'">';
-	print '<INPUT type=text name=q size=25 maxlength=255 value="'.$_POST["q"].'">';
+	print '<INPUT type=text name=q size=10 maxlength=255 value="'.$_POST["q"].'">';
 	print '<input type="submit" value="Søg">';
 	print '</form>';
 	if ($links=="on") {
-		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=off">Hide direct title links</a>';
+		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=off">Hide title links</a>';
 	} else {
-		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=on">Show direct title links</a>';
+		print '<a class=menu2 href="'.$_SERVER['PHP_SELF'].'?slug='.$slug.'&links=on">Show title links</a>';
 	}
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	return ;
@@ -227,7 +227,7 @@ function show_single_video($id, $links) {
 	echo "</p>";
 	echo "<p>".$JsonContent["description"]."</p>"; 
 	echo "<p>Varighed ".$JsonContent["duration"]."</p>";             
-	echo "<p>Sendt ".$JsonContent["formattedBroadcastTimeForTVSchedule"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
+	echo "<p>Sendt ".$JsonContent["formattedBroadcastTime"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
 	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
 	echo "</div>\n";
 return;
