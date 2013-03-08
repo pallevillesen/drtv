@@ -239,7 +239,7 @@ $slug=$_GET["slug"];
 if ($links != "on") $links="off";
 if (!$slug) $slug="videos/newest"; # If no slug defined, default to newest videos
 if ($slug=="search" & !$_POST["q"]) $slug="programseries"; # Empty search takes you to the big table instead
-if ($slug=="search") $slug="search/".$_POST["q"]; 
+if ($slug=="search") $slug=urlencode("search/".$_POST["q"]); 
 # Now create the page
 showmenu($slug, $links);
 if ($id) show_single_video($id, $links);
