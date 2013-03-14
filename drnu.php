@@ -2,7 +2,10 @@
 <html> 
 <head> 
 <meta http-equiv="content-type" content="text/html; charset=utf-8"/> 
-<title>DR NU</title> 
+<META name="author" content="Palle Villesen">
+<META name="keywords" content="Danmarks Radio, TV, DR NU, dr.dk/tv, drs udsendelser, mp4">
+<META name="description" content="DR4tablets er et simpelt php script som læser DRs api - alt indhold ligger hos DR og streames direkte fra DR.">
+<title>DR4tablets - simpelt interface til DRs udsendelser (som på www.dr.dk/tv)</title> 
 <style type="text/css">     
 body {
 	font-family: Arial, Helvetica, Sanserif;
