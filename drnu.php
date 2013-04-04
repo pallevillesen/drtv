@@ -69,13 +69,18 @@ img {
 	background-color:#eee;
 	color:#111;
 }
+
+#all_programs th a{
+	color:#000;
+}
+
 .text_line {
 	clear:both;
 	margin-bottom:2px;
 }
 .w { 
 	width: 320px;
-	height: 380px;
+	height: 400px;
 	float: left; 
 	background:#333;
 	margin: 10px 10px 10px 10px;
@@ -111,8 +116,19 @@ function showmenu($slug, $links) {
 	return ;
 }
 function showseries($slug, $links) {
-	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/programseries"), true);    
+	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/programseries"), true);
+	if ($_GET['sort'] =="antal") {
+		usort($JsonContent, function($a, $b) { return $b['videoCount'] - $a['videoCount']; });
+	} 
+	if ($_GET['sort'] =="date") {
+		usort($JsonContent, function($a, $b) { return strnatcmp($a['newestVideoPublishTime'], $b['newestVideoPublishTime']);  });
+		$JsonContent=array_reverse($JsonContent);
+	}
+	if ($_GET['sort'] =="labels") {
+		usort($JsonContent, function($a, $b) { return strnatcmp($a['labels'][0], $b['labels'][0]);  });
+	}
 	$lng = count($JsonContent);     
+	if ($_GET['sort'] =="title" or !$_GET['sort']) {
 	$letters=preg_split('/(?<!^)(?!$)/u', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ"); # Multi-byte safe splitting taking cvare of æøå
 	for ($i=0; $i < count($letters)-1; $i++) {
 		$letter=$letters[$i];
@@ -120,8 +136,18 @@ function showseries($slug, $links) {
 		echo " - ";
 	}
 	echo "<a href='#".$letters[count($letters)-1]."'>".$letters[count($letters)-1]."</a><p>";
+	}
 	echo "<table id='all_programs'>";
-	echo "<tr><th>Antal&nbsp;</th><th>Serie</th><th>Sidst tilføjet</th><th>Labels</th></tr>\n";
+	echo "<tr>";
+	$videolink = '?slug=programseries&links='.$links.'&sort=antal';
+	echo "<th><a href=$videolink>Antal&nbsp;</a></th>";
+	$videolink = '?slug=programseries&links='.$links.'&sort=title';
+	echo "<th><a href=$videolink>Serie</a></th>";
+	$videolink = '?slug=programseries&links='.$links.'&sort=date';
+	echo "<th><a href=$videolink>Sidst tilføjet</a></th>";
+	$videolink = '?slug=programseries&links='.$links.'&sort=labels';
+	echo "<th><a href=$videolink>Labels</a></th>";
+	echo "</tr>\n";
 	$oldletter="";
 	$j=0;
 	for($i=0; $i<$lng; $i++){             
@@ -146,7 +172,7 @@ function showseries($slug, $links) {
 		echo "</td>";
 		echo "<td>";
 		$video_date = explode("T",$JsonContent[$i]["newestVideoPublishTime"] );
-		echo $video_date[0];
+		echo $video_date[0]." ".$video_date[1];
 		echo "</td><td>";
 		echo implode(",", $JsonContent[$i]["labels"]);
 		echo "</td>";
@@ -158,7 +184,7 @@ function showseries($slug, $links) {
 	return;
 }
 function showvideos($slug="videos/newest", $links) {
-	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug), true); 
+	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug."?limit=100"), true); 
 	$lng = count($JsonContent); 
 	for($i=0; $i<$lng; $i++){ 
 		$id=$JsonContent[$i]["id"]; 
@@ -175,8 +201,9 @@ function showvideos($slug="videos/newest", $links) {
 		} else {
 			echo "<strong>".$JsonContent[$i]["title"]."</strong>";
 		}
-		echo "<br>";
-		echo "Sendt: ".$JsonContent[$i]["formattedBroadcastTime"]."<br>";
+		echo "</p><p>";
+		echo "Sendt: ".$JsonContent[$i]["formattedBroadcastTime"]." ".$JsonContent[$i]["formattedBroadcastHourForTVSchedule"]."<br>"; 
+		echo "Kanal: ".$JsonContent[$i]["broadcastChannel"]."<br>"; 
 		echo "Udløber: ".$JsonContent[$i]["formattedExpireTime"]; 
 		echo "</p><p>";
 		echo '<a href="?id='.$id.'">Se udsendelsen</a></p><p>';
@@ -231,6 +258,7 @@ function show_single_video($id, $links) {
 	echo "<p>".$JsonContent["description"]."</p>"; 
 	echo "<p>Varighed ".$JsonContent["duration"]."</p>";             
 	echo "<p>Sendt ".$JsonContent["formattedBroadcastTime"]." klokken ".$JsonContent["formattedBroadcastHourForTVSchedule"]."</p>"; 
+	echo "<p>Kanal: ".$JsonContent["broadcastChannel"]."</p>"; 
 	echo "<p>Udløber ".$JsonContent["formattedExpireTime"]."</p>"; 
 	echo "</div>\n";
 return;
