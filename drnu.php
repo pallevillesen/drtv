@@ -80,7 +80,7 @@ img {
 }
 .w { 
 	width: 320px;
-	height: 400px;
+	height: 420px;
 	float: left; 
 	background:#333;
 	margin: 10px 10px 10px 10px;
