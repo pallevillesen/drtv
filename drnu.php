@@ -100,8 +100,7 @@ img {
 function showmenu($slug, $links) {
 	print '<a class="menu" href="?slug=videos/premiere&links='.$links.'">Premiere</a>';
 	print '<a class="menu" href="?slug=videos/newest&links='.$links.'">Nyeste</a>';
-	print '<a class="menu" href="?slug=videos/mostviewed&links='.$links.'">Mest sete</a>';
-	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Udløber</a>';
+	print '<a class="menu" href="?slug=videos/stats/24&links='.$links.'">Top 20 (24 timer)</a>';
 	print '<a class="menu" href="?slug=programseries&links='.$links.'">Oversigt</a>';
 	print '<form class="menu" method=POST action="?slug=search&links='.$links.'">';
 	print '<INPUT type=text name=q size=10 maxlength=255 value="'.$_POST["q"].'">';
@@ -183,9 +182,11 @@ function showseries($slug, $links) {
 	echo "\n";
 	return;
 }
-function showvideos($slug="videos/newest", $links) {
+
+function showvideos($slug, $links) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug."?limit=100"), true); 
 	$lng = count($JsonContent); 
+	if ($slug=="videos/stats/24") $lng=min(20, $lng);
 	for($i=0; $i<$lng; $i++){ 
 		$id=$JsonContent[$i]["id"]; 
 		echo "<div class='w'>";
@@ -214,6 +215,40 @@ function showvideos($slug="videos/newest", $links) {
 	}
 	return;
 }
+
+
+function showtop20($slug, $links) {
+	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug."?limit=100"), true); 
+	$lng = count($JsonContent); 
+	if ($slug=="videos/stats/24") $lng=min(20, $lng);
+	for($i=0; $i<$lng; $i++){ 
+		$id=$JsonContent[$i]["id"]; 
+		echo "<div class='w'>";
+		$width=320; 
+		$height=180;
+		$thumbnail = $width."x".$height.".jpg"; 
+		$url = 'http://www.dr.dk/nu/api/videos/'.$id.'/images' ;
+		echo "<a href='?id=".$id."'><img width=$width height=$height src=\"$url/$thumbnail\" alt='' /></a>"; 
+		print "<p class='text_line'></p>\n";
+		echo "<p>";
+		if ($links=="on") {
+			echo "<strong><a href = ". get_mp4link_by_id($id) .">" .$JsonContent[$i]["title"]."</a></strong>";
+		} else {
+			echo "<strong>".$JsonContent[$i]["title"]."</strong>";
+		}
+		echo "</p>";
+		echo '<p>';
+		echo 'Afspilninger: '.$JsonContent[$i]["viewCount"];
+		echo "</p>";
+		echo "<p>";
+		echo '<a href="?id='.$id.'">Se udsendelsen</a></p><p>';
+		echo "</p>";
+		echo "</div>\n";
+	}
+	return;
+}
+
+
 function get_mp4link_by_id($id) {
 	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/videos/".$id), true); 
 	$videoManifestUrl = file_get_contents($JsonContent["videoManifestUrl"]);
@@ -268,13 +303,13 @@ $links=$_GET["links"];
 $id=$_GET["id"];
 $slug=$_GET["slug"];
 if ($links != "on") $links="off";
-if (!$slug) $slug="videos/mostviewed"; # If no slug defined, default to most viewed
+if (!$slug) $slug="videos/stats/24"; # If no slug defined, default to most viewed
 if ($slug=="search" & !$_POST["q"]) $slug="programseries"; # Empty search takes you to the big table instead
 if ($slug=="search") $slug=urlencode("search/".$_POST["q"]); 
-# Now create the page
 showmenu($slug, $links);
 if ($id) show_single_video($id, $links);
 elseif ($slug=="programseries") showseries($slug, $links);
+elseif ($slug=="videos/stats/24") showtop20($slug, $links);
 else  showvideos($slug, $links);
 ?>  
 </body> 
