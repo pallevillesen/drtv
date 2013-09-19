@@ -98,7 +98,7 @@ img {
 <body>
 <?php 
 function showmenu($slug, $links) {
-	print '<a class="menu" href="?slug=videos/premiere&links='.$links.'">Premiere</a>';
+	print '<a class="menu" href="?slug=videos/lastchance&links='.$links.'">Sidste chance</a>';
 	print '<a class="menu" href="?slug=videos/newest&links='.$links.'">Nyeste</a>';
 	print '<a class="menu" href="?slug=videos/stats/24&links='.$links.'">Top 20 (24 timer)</a>';
 	print '<a class="menu" href="?slug=programseries&links='.$links.'">Oversigt</a>';
