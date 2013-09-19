@@ -10,19 +10,19 @@ body {
 	text-decoration: none; 
 	margin: 0px 20px 10px 0px;
 	padding:0;
-	background-color: #aaa;
-	color:#333;
+	background-color: #000;
+	color:#fff;
 }
 
 a {
-	color: #333;
+	color: #fff;
 }
 
 input { 
-	background-color: #ddd;
+	background-color: #444;
 	border-collapse:collapse;
-	border:1px solid #333;
-	color: #333;
+	border:1px solid #000;
+	color: #eee;
 }
 
 img {
@@ -35,8 +35,8 @@ img {
 	float: left; 
 	margin: 0px 10px 0px 10px;
 	padding: 50px 5px 5px 5px;
-	background:#ccc;
-	color: #333;
+	background:#555;
+	color: #eee;
 	font-size: 1em;
 	font-weight: bold;
 	text-decoration: none;
@@ -45,8 +45,8 @@ img {
 .menu2 {
 	float: right; 
 	margin: 0px 10px 0px 10px;
-	background:#ccc;
-	color: #333;
+	background:#555;
+	color: #eee;
 	font-size: 1em;
 	font-weight: bold;
 	padding: 50px 5px 5px 5px;
@@ -88,7 +88,7 @@ img {
 .w { 
 	float: left;
 	width: 70%;
-	background:#ccc;
+	background:#333;
 	margin: 10px 10px 10px 10px;
 	padding: 10px 10px 10px 10px;
 	text-align: left;
@@ -134,12 +134,12 @@ function showseries($slug, $links) {
 	if ($_GET['sort'] =="labels") {
 		usort($JsonContent, function($a, $b) { return strnatcmp($a['labels'][0], $b['labels'][0]);  });
 	}
-	$lng = count($JsonContent);     
+	$lng = count($JsonContent);
 	echo "<table id='all_programs'>";
-	# ABCDEF... line
+	# Make the letter navigation bar - only if sort by title
+	$letters=preg_split('/(?<!^)(?!$)/u', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ"); # Multi-byte safe splitting taking care of æøå
 	if ($_GET['sort'] =="title" or !$_GET['sort']) {
-		$letters=preg_split('/(?<!^)(?!$)/u', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ"); # Multi-byte safe splitting taking cvare of æøå
-		echo "<tr><td colspan=6>";
+	echo "<tr><td colspan=6>";
 		for ($i=0; $i < count($letters)-1; $i++) {
 			$letter=$letters[$i];
 			echo "<a href='#".$letters[$i]."'>".$letters[$i]."</a>";
@@ -175,10 +175,12 @@ function showseries($slug, $links) {
 		echo $JsonContent[$i]["videoCount"];
 		echo "</td>";
 		echo "<td>";
-		while ($newletter != $oldletter & $j < count($letters) ) {
-			$oldletter=$letters[$j];
-			echo "\n<a name='$oldletter'>\n";
-			$j = $j +1;
+		if (in_array($newletter, $letters) and ($_GET['sort'] =="title" or !$_GET['sort'] )) {
+			while ($newletter != $oldletter & $j < count($letters) ) {
+				$oldletter=$letters[$j];
+				echo "\n<a name='$oldletter'>\n";
+				$j = $j +1;
+			}
 		}
 		echo '<a href="'.$videolink.'">'.$JsonContent[$i]["title"].'</a>';
 		echo "</td>";
@@ -276,8 +278,6 @@ function show_single_video($id, $links) {
 	$thumbnail = $width."x".$height.".jpg"; 
 	$url = 'http://www.dr.dk/nu/api/videos/'.$id.'/images' ;
 	echo "<div class='w'>";
-	echo "<img width=$width height=$height src=\"$url/$thumbnail\" alt='' />";
-	echo "<p class='clearboth'></p>"; 
 	# Video links
 	$pos = strpos($videoManifestUrl, "CMS/Resources/");     
 	$LinkCut = substr($videoManifestUrl, $pos);     
@@ -293,6 +293,8 @@ function show_single_video($id, $links) {
 	$VideoManifestUrlCut = substr($JsonContent["videoManifestUrl"], 0, $pos);
 	echo '<a href="'.$VideoManifestUrlCut.'">FLASH</a>';
 	echo "</h1>";
+	echo "<img width=$width height=$height src=\"$url/$thumbnail\" alt='' />";
+	echo "<p class='clearboth'></p>"; 
 	# Information about video
 	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
 	echo "<p>";

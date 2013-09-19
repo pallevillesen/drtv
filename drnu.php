@@ -270,8 +270,6 @@ function show_single_video($id, $links) {
 	$thumbnail = $width."x".$height.".jpg"; 
 	$url = 'http://www.dr.dk/nu/api/videos/'.$id.'/images' ;
 	echo "<div class='single_video_container'>";
-	echo "<img width=$width height=$height src=\"$url/$thumbnail\" alt='' />";
-	print "<p class='text_line'></p>\n";
 	# Video links
 	$pos = strpos($videoManifestUrl, "CMS/Resources/");     
 	$LinkCut = substr($videoManifestUrl, $pos);     
@@ -287,6 +285,9 @@ function show_single_video($id, $links) {
 	$VideoManifestUrlCut = substr($JsonContent["videoManifestUrl"], 0, $pos);
 	echo '<a href="'.$VideoManifestUrlCut.'">FLASH</a>';
 	echo "</h1>";
+	# Video thumbnail
+	echo "<img width=$width height=$height src=\"$url/$thumbnail\" alt='' />";
+	print "<p class='text_line'></p>\n";
 	# Information about video
 	$Slug="programseries/".$JsonContent['programSerieSlug']."/videos";      
 	echo "<p>";
