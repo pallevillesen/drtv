@@ -126,15 +126,16 @@ function showseries($slug, $links) {
 	if ($_GET['sort'] =="labels") {
 		usort($JsonContent, function($a, $b) { return strnatcmp($a['labels'][0], $b['labels'][0]);  });
 	}
-	$lng = count($JsonContent);     
+	$lng = count($JsonContent);
+	# Make the letter navigation bar - only if sort by title
+	$letters=preg_split('/(?<!^)(?!$)/u', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ"); # Multi-byte safe splitting taking care of æøå
 	if ($_GET['sort'] =="title" or !$_GET['sort']) {
-	$letters=preg_split('/(?<!^)(?!$)/u', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ"); # Multi-byte safe splitting taking cvare of æøå
-	for ($i=0; $i < count($letters)-1; $i++) {
-		$letter=$letters[$i];
-		echo "<a href='#".$letters[$i]."'>".$letters[$i]."</a>";
-		echo " - ";
-	}
-	echo "<a href='#".$letters[count($letters)-1]."'>".$letters[count($letters)-1]."</a><p>";
+		for ($i=0; $i < count($letters)-1; $i++) {
+			$letter=$letters[$i];
+			echo "<a href='#".$letters[$i]."'>".$letters[$i]."</a>";
+			echo " - ";
+		}
+		echo "<a href='#".$letters[count($letters)-1]."'>".$letters[count($letters)-1]."</a><p>";
 	}
 	echo "<table id='all_programs'>";
 	echo "<tr>";
@@ -162,10 +163,12 @@ function showseries($slug, $links) {
 		echo $JsonContent[$i]["videoCount"];
 		echo "</td>";
 		echo "<td>";
-		while ($newletter != $oldletter & $j < count($letters) ) {
-			$oldletter=$letters[$j];
-			echo "\n<a name='$oldletter'>\n";
-			$j = $j +1;
+		if (in_array($newletter, $letters) and ($_GET['sort'] =="title" or !$_GET['sort'] )) {
+			while ($newletter != $oldletter & $j < count($letters) ) {
+				$oldletter=$letters[$j];
+				echo "\n<a name='$oldletter'>\n";
+				$j = $j +1;
+			}
 		}
 		echo '<a href="'.$videolink.'">'.$JsonContent[$i]["title"].'</a>';
 		echo "</td>";
@@ -218,9 +221,9 @@ function showvideos($slug, $links) {
 
 
 function showtop20($slug, $links) {
-	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug."?limit=100"), true); 
+	$JsonContent = json_decode(file_get_contents("http://www.dr.dk/nu/api/".$slug."?limit=20"), true); 
 	$lng = count($JsonContent); 
-	if ($slug=="videos/stats/24") $lng=min(20, $lng);
+	$lng=min(20, $lng);
 	for($i=0; $i<$lng; $i++){ 
 		$id=$JsonContent[$i]["id"]; 
 		echo "<div class='w'>";
@@ -309,7 +312,7 @@ if ($slug=="search") $slug=urlencode("search/".$_POST["q"]);
 showmenu($slug, $links);
 if ($id) show_single_video($id, $links);
 elseif ($slug=="programseries") showseries($slug, $links);
-elseif ($slug=="videos/stats/24") showtop20($slug, $links);
+elseif (strpos($slug, "videos/stats/") !== false) showtop20($slug, $links);
 else  showvideos($slug, $links);
 ?>  
 </body> 
