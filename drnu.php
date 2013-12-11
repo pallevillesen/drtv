@@ -43,7 +43,7 @@ public function searchProgramCards($limit=25, $offset=null, $field=null, $search
 	if (count(explode(" ",$searchtext)) > 1) {
 		$params= $field.'="'.rawurlencode($searchtext).'"';
 	} else {
-		$params= $field.'=$like("'.$searchtext.'")';
+		$params= $field.'=$like("'.rawurlencode($searchtext).'")';
 	}
 	$params = $params ."&PrimaryAssetKind='VideoResource'&limit=".$limit;
 	if ($offset>0) {
@@ -413,7 +413,14 @@ function listBundles($api,$bundles) {
 		echo "<td>";
 		print date('j.n.Y \k\l. H:i',$infoLabels["sent"]);
 		echo "</td><td>";
-		echo "labels";
+		if ($infoLabels["GenreText"]) {
+			$url = $_SERVER['PHP_SELF']."?field=GenreText&searchtext=".urlencode($infoLabels["GenreText"]);
+			print "<a href='".$url."'>".$infoLabels["GenreText"]."</a>, ";
+		}
+		if ($infoLabels["OnlineGenreText"]) {
+			$url = $_SERVER['PHP_SELF']."?field=OnlineGenreText&searchtext=".urlencode($infoLabels["OnlineGenreText"]);
+			print "<a href='".$url."'>".$infoLabels["OnlineGenreText"]."</a>";
+		}
 		echo "</td>";
 		echo "</tr>";
 		echo "\n";
@@ -424,7 +431,7 @@ function listBundles($api,$bundles) {
 }
 
 function listVideos($api,$programCards, $navbar=false) {
-	$limit=50;
+	$limit=200;
 	if (array_key_exists("Data", $programCards)) { 
 		$programCards = $programCards["Data"];
 	}
@@ -441,8 +448,7 @@ function listVideos($api,$programCards, $navbar=false) {
 		$paramString2 = http_build_query($params);
 		echo "<a href='?".$paramString0."'>[<<]</a> - ";
 		echo "<a href='?".$paramString1."'>[<]</a> - ";
-		echo "<a href='?".$paramString2."'>[>]</a> - ";
-		echo "Viser i øjeblikket: [".$offset."-".($offset+$limit)."]";
+		echo "<a href='?".$paramString2."'>[>]</a>";
 		print "\n<p class='text_line'>&nbsp;</p>\n";
 	}
 	# Loop through the list of videos
@@ -454,8 +460,8 @@ function listVideos($api,$programCards, $navbar=false) {
 			# Video is not playable - do not show in list(?)
 			continue;
 		} 
-		# Also detech if it is obsolete - ["PrimaryAssetEndPublish"]=> "2013-04-14T12:10:00Z"
 		if (array_key_exists('PrimaryAssetEndPublish', $programCard)) {
+			# Also detect if it is obsolete - ["PrimaryAssetEndPublish"]=> "2013-04-14T12:10:00Z"
 			if (strtotime($programCard['PrimaryAssetEndPublish']) < time() ) {
 				continue;
 			}
@@ -577,14 +583,23 @@ if ($info) {
 	$search= $_GET["searchtext"];
 	$search = stripslashes($search);
 	$search = urlencode($search);
-	$programCards = $api->searchProgramCards($limit=50, $offset=$_GET["offset"], $field="Title", $searchtext=$search);
+	$programCards = $api->searchProgramCards($limit=100, $offset=$_GET["offset"], $field="Title", $searchtext=$search);
 	listVideos($api, $programCards, $navbar=true);
 } elseif ($_GET["searchtext"] and $_GET["field"]) { 
 	# If search string - do seach
 	$search= $_GET["searchtext"];
 	$search = stripslashes($search);
 	$search = urldecode($search);
-	$programCards = $api->searchProgramCards($limit=50, $offset=$_GET["offset"], $field=$_GET["field"], $searchtext=$search);
+	$programCards1 = $api->searchProgramCards($limit=100, $offset=$_GET["offset"], $field=$_GET["field"], $searchtext=$search);
+	$programCards2 = $api->searchProgramCards($limit=100, $offset=($_GET["offset"]+100), $field=$_GET["field"], $searchtext=$search); # Get 50 next
+	if (array_key_exists("Data", $programCards1)) { 
+		$programCards1 = $programCards1["Data"];
+	}
+	if (array_key_exists("Data", $programCards2)) { 
+		$programCards2 = $programCards2["Data"];
+	}
+	# Combine two arrays into one big one
+	$programCards = array_merge($programCards1, $programCards2);
 	listVideos($api, $programCards, $navbar=true);
 } elseif ($slug=="mostviewed1") {
 	# Show most viewed programcards
