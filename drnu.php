@@ -40,10 +40,10 @@ public function programCardRelations($relationsSlug, $limit=25, $offset=null) {
 }
 
 public function searchProgramCards($limit=25, $offset=null, $field=null, $searchtext=null) {
-	if (count(explode(" ",$searchtext)) > 1) {
-		$params= $field.'="'.rawurlencode($searchtext).'"';
+	if (count(explode(" ",urldecode($searchtext))) > 1) {
+		$params= $field.'="'.rawurlencode(urldecode($searchtext)).'"';
 	} else {
-		$params= $field.'=$like("'.rawurlencode($searchtext).'")';
+		$params= $field.'=$like("'.rawurlencode(urldecode($searchtext)).'")';
 	}
 	$params = $params ."&PrimaryAssetKind='VideoResource'&limit=".$limit;
 	if ($offset>0) {
@@ -55,9 +55,9 @@ public function searchProgramCards($limit=25, $offset=null, $field=null, $search
 		echo "Raw ",var_dump($searchtext);
 		echo "rawurlencode ", var_dump(rawurlencode($searchtext));
 		echo "rawurldecode ", var_dump(rawurldecode($searchtext));
-		echo "rawurldecode+urlencode ", var_dump(urlencode(rawurldecode($searchtext)));
 		echo "urlencode ", var_dump(urlencode($searchtext));
 		echo "urldecode ", var_dump(urldecode($searchtext));
+		echo "urldecode+rawurlencode", var_dump(rawurlencode(urldecode($searchtext)));
 		echo "strip ", var_dump(stripslashes($searchtext));
 		echo $url."?".$params;
 		print "</pre>";
