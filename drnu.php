@@ -67,10 +67,13 @@ public function searchProgramCards($limit=25, $offset=null, $field=null, $search
 	return $this->_http_request($url, $params);
 }
 
-public function getMostViewedProgramCards($days) {
-	$params = 'days=$eq("'.$days.'")';
+public function getMostViewedProgramCards($days, $channelurl=null) {
+	$params = 'days='.$days;
 	$params = $params . '&ChannelType=TV';
 	$params = $params . '&count=50';
+	if ($channelurl) {
+		$params= $params . '&Channel='.rawurlencode(urldecode($channelurl));
+	}
 	$url='http://www.dr.dk/mu/View/programviews';
 	if ($_GET["debug"]) {
 		print "<pre>";
@@ -296,10 +299,9 @@ function showMenu() {
 	print '<a class="menu" href="?slug=hoejdepunkter">Højdepunkter</a>';
 	print '<a class="menu" href="?slug=forpremierer">Forpremierer</a>';
 	print '<a class="menu" href="?slug=test-spotliste">Spotlist</a>';
-	print '<a class="menu" href="?slug=recent">Aktive<br></a>';
-	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>døgn</a>';
-	print '<a class="menu" href="?slug=mostviewed7">Seneste<br>uge</a>';
-	print '<a class="menu" href="?slug=mostviewed31">Seneste<br>måned</a>';
+	print '<a class="menu" href="?slug=recent">Ses af andre<br>lige nu!</a>';
+	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>uge</a>';
+	print '<a class="menu" href="?slug=mostviewed2">Seneste<br>måned</a>';
 	print '<a class="menu" href="?slug=bundles">Serier</a>';
 	print '<form class="menu" method=GET action="">';
 	print '<INPUT type=text name=searchtext size=10 maxlength=255 value="'.$_GET["searchtext"].'">';
@@ -308,6 +310,17 @@ function showMenu() {
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	return ;
 }
+
+function showChannelBar($slug, $channels) {
+	print "\n<p class='text_line'>";
+	foreach ($channels as $key => $value) {
+		print '<a href="?slug='.$slug.'&channel='.$key.'">'.$key.'</a>&nbsp;&nbsp;';
+	}
+	print "</p>\n";
+	return ;
+}
+
+
 
 function  createInfoLabels($programCard) {
 	$infoLabels = array();
@@ -568,6 +581,13 @@ if ($play) {
 showHeader();
 showMenu();
 
+$channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1", 
+"DR2" => "dr.dk/mas/whatson/channel/DR2",
+"DR3" => "dr.dk/mas/whatson/channel/DR3", 
+"Ramasjang" => "dr.dk/mas/whatson/channel/TVR", 
+"DRKultur" => "dr.dk/mas/whatson/channel/TVK", 
+"Ultra" => "dr.dk/mas/whatson/channel/TVL");
+
 # Set default slug
 if (!$slug) {
 	$slug="mostviewed1";
@@ -602,15 +622,13 @@ if ($info) {
 	listVideos($api, $programCards, $navbar=true);
 } elseif ($slug=="mostviewed1") {
 	# Show most viewed programcards
-	$programCards = $api->getMostViewedProgramCards($days=1);
+	$programCards = $api->getMostViewedProgramCards($days=7, $channelurl=$channels[$_GET['channel']]);
+	showChannelBar($slug, $channels);
 	listVideos($api, $programCards);
-} elseif ($slug=="mostviewed7") {
+} elseif ($slug=="mostviewed2") {
 	# Show most viewed programcards
-	$programCards = $api->getMostViewedProgramCards($days=7);
-	listVideos($api, $programCards);
-} elseif ($slug=="mostviewed31") {
-	# Show most viewed programcards
-	$programCards = $api->getMostViewedProgramCards($days=31);
+	$programCards = $api->getMostViewedProgramCards($days=30, $channelurl=$channels[$_GET['channel']]);
+	showChannelBar($slug, $channels);
 	listVideos($api, $programCards);
 } elseif ($slug=="recent") {
 	# Show most viewed programcards
