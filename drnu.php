@@ -45,9 +45,11 @@ public function searchProgramCards($limit=25, $offset=null, $field=null, $search
 	} else {
 		$params= $field.'=$like("'.rawurlencode(urldecode($searchtext)).'")';
 	}
-	$params = $params ."&PrimaryAssetKind='VideoResource'&limit=".$limit;
+	$params = $params ."&PrimaryAssetKind='VideoResource'";
+	$params = $params . "&PrimaryAssetStartPublish=\$orderby('desc')";
+	$params = $params . "&limit=".$limit;
 	if ($offset>0) {
-		$params= $params . '&offset=$eq('.$offset.')';
+		$params= $params . '&offset='.$offset;
 	}
 	$url='http://www.dr.dk/mu/search/programcard';
 	if ($_GET["debug"]) {
@@ -96,7 +98,6 @@ public function programCard($slug) {
 	$url='http://www.dr.dk/mu/programcard/expanded/';
 	return $this->_http_request($url.$slug);
 }
-
 
 public function _http_request($url, $params=NULL) {
 	if ($params!=NULL) {
@@ -276,7 +277,7 @@ img {
 	padding: 10px 10px 10px 10px;
 }
 .single_video_container {
-	width: 640px;
+	width: 800px;
 	float: left; 
 	background:#333;
 	margin: 10px 10px 10px 10px;
@@ -295,7 +296,7 @@ function showMenu() {
 	print '<a class="menu" href="?slug=hoejdepunkter">Højdepunkter</a>';
 	print '<a class="menu" href="?slug=forpremierer">Forpremierer</a>';
 	print '<a class="menu" href="?slug=test-spotliste">Spotlist</a>';
-	print '<a class="menu" href="?slug=recent">Set nu!<br></a>';
+	print '<a class="menu" href="?slug=recent">Aktive<br></a>';
 	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>døgn</a>';
 	print '<a class="menu" href="?slug=mostviewed7">Seneste<br>uge</a>';
 	print '<a class="menu" href="?slug=mostviewed31">Seneste<br>måned</a>';
@@ -307,19 +308,6 @@ function showMenu() {
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	return ;
 }
-
-// function parseDate($dateString) {
-	// $pattern ='(\d+)\-(\d+)\-(\d+)T(\d+):(\d+):(\d+)';
-	// $subject= $dateString;
-	// preg_match($pattern, $subject, $matches);
-	// $year = int($matches[1]);
-	// $month = int($matches[2]);
-	// $day = int($matches[3]);
-	// $hours = int($matches[4]);
-	// $minutes = int($matches[5]);
-	// $seconds = int($matches[6]);
-	// return date('l jS \of F Y h:i:s A', mktime($hours, $minutes, $seconds, $month, $day, $year));
-// }
 
 function  createInfoLabels($programCard) {
 	$infoLabels = array();
@@ -473,7 +461,7 @@ function listVideos($api,$programCards, $navbar=false) {
 		$moreinfourl = $_SERVER['PHP_SELF']."?slug=". urlencode($programCard['Slug'])."&info=1";
 		# Output video
 		echo "<div class='w'>";
-		echo "<a href='".$moreinfourl."'><img src='".$iconImage."'></a>"; 
+		echo "<a href='".$moreinfourl."'><img src='".$iconImage."' height=180></a>"; 
 		print "<p class='text_line'></p>\n";
 		print "<h3><a href='".$moreinfourl."'>".$infoLabels["Title"]."</a></h3>";
 		print "<p>".$infoLabels["Subtitle"]."</P>";
@@ -505,23 +493,33 @@ function listVideos($api,$programCards, $navbar=false) {
 function listSingleVideo($api,$programCard) {
 	$programCard = $programCard["Data"][0];
 	$infoLabels = createInfoLabels($programCard); # Format some information
+	if (array_key_exists('PrimaryAssetUri', $programCard)) {
+		$asset = $api->_http_request($programCard['PrimaryAssetUri'] );
+		$videoUrl = $api->getLink($asset, 'Android');
+		$videoUrl = str_replace('rtsp://om.gss.dr.dk/mediacache/_definst_/mp4:content/', 'http://vodfiles.dr.dk/', $videoUrl);
+	} else {
+		$videoUrl=false;
+	}
 	echo "<div class='single_video_container'>";
 	$urn=$programCard['Urn'];
-	$iconImage="http://www.dr.dk/mu/programcard/imageuri/".$urn."?width=640";
-	echo "<img src='".$iconImage."'>"; 
-	print "<p class='text_line'></p>\n";
-	print "<h3>".$infoLabels["Title"]."</h3>";
+	$iconImage="http://www.dr.dk/mu/programcard/imageuri/".$urn."?width=800";
+	if ($videoUrl) {
+		print "<a href='".$videoUrl."'><img src='".$iconImage."' width=800></A>";
+		print "<p class='text_line'></p>\n";
+		print "<a href='".$videoUrl."'><h1>".$infoLabels["Title"]."</h1></A>";
+	} else {
+		print "<img src='".$iconImage."' width=800>"; 
+		print "<p class='text_line'></p>\n";
+		print "<h1>".$infoLabels["Title"]."</h1>";
+	}
 	print "<p>".$programCard["Subtitle"]."</P>";
 	print "<p>".$infoLabels["Description"]."</P>";
 	print "<p>Sendt: ".date('j.n.Y \k\l. H:i',$infoLabels["sent"])."</P>";
 	print "<p>Udløber: ".date('j.n.Y \k\l. H:i',$infoLabels["expires"])."</P>";
-	if (!array_key_exists('PrimaryAssetUri', $programCard)) {
-		echo "<p>Video er ikke online endnu</p>";
+	if ($videoUrl) {
+		print "<h1><a href='".$videoUrl."'>"."Afspil video"."</A>"."</h1>";
 	} else {
-		$asset = $api->_http_request($programCard['PrimaryAssetUri'] );
-		$videoUrl = $api->getLink($asset, 'Android');
-		$videoUrl = str_replace('rtsp://om.gss.dr.dk/mediacache/_definst_/mp4:content/', 'http://vodfiles.dr.dk/', $videoUrl);
-		print "<p><a href='".$videoUrl."'>"."Afspil video"."</A>"."</P>";
+		echo "<p>Video er ikke online endnu</p>";
 	}
 	# Link til serier
 	echo "<hr>";
@@ -534,6 +532,7 @@ function listSingleVideo($api,$programCard) {
 	print "<a href='".$url."'>".$infoLabels["GenreText"]."</a> - ";
 	$url = $_SERVER['PHP_SELF']."?field=OnlineGenreText&searchtext=".urlencode($infoLabels["OnlineGenreText"]);
 	print "<a href='".$url."'>".$infoLabels["OnlineGenreText"]."</a>";
+	print "<p class='text_line'></p>\n";
 	echo "</div>\n";
 	return true;
 }
@@ -622,8 +621,12 @@ if ($info) {
 	listBundles($api, $programCards);
 } elseif (!$info) { 
 	# If no search string - use slug
-	$programCards = $api->programCardRelations($slug, $limit=50, $offset=$_GET["offset"]);
-	listVideos($api, $programCards, $navbar=true);
+	$programCards = $api->programCardRelations($slug, $limit=200, $offset=$_GET["offset"]);
+	if ($programCard["TotalSize"] > 200) {
+		listVideos($api, $programCards, $navbar=true);
+	} else {
+		listVideos($api, $programCards, $navbar=false);
+	}
 } 
 
 if ($_GET["debug"]) {
@@ -642,4 +645,3 @@ if ($_GET["debug"]) {
 ?>  
 </body> 
 </html>
-  
