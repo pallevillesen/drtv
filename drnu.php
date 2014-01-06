@@ -39,6 +39,23 @@ public function programCardRelations($relationsSlug, $limit=25, $offset=null) {
 	return $this->_http_request($url, $params);
 }
 
+
+public function programCardLatest($limit=25, $offset=null, $channelurl=null) {
+	$params = $params . "PrimaryAssetStartPublish=\$orderby('desc')";
+	$params = $params . "&PrimaryAssetKind='VideoResource'";
+	$params = $params . '&ChannelType=$eq("TV")';
+	$params = $params . "&limit=".$limit;
+	if ($channelurl!=null) {
+		$params= $params . '&PrimaryChannel=$like("'.rawurlencode(urldecode($channelurl)).'")';
+	}
+	if ($offset!=null) {
+		$params= $params . '&offset=$eq('.$offset.')';
+	}
+	$url='http://www.dr.dk/mu/programcard';
+	return $this->_http_request($url, $params);
+}
+
+
 public function searchProgramCards($limit=25, $offset=null, $field=null, $searchtext=null) {
 	if (count(explode(" ",urldecode($searchtext))) > 1) {
 		$params= $field.'="'.rawurlencode(urldecode($searchtext)).'"';
@@ -299,6 +316,7 @@ function showMenu() {
 	print '<a class="menu" href="?slug=hoejdepunkter">Højdepunkter</a>';
 	print '<a class="menu" href="?slug=forpremierer">Forpremierer</a>';
 	print '<a class="menu" href="?slug=test-spotliste">Spotlist</a>';
+	print '<a class="menu" href="?action=senestsendt">Senest<br>sendt</a>';
 	print '<a class="menu" href="?slug=recent">Ses af andre<br>lige nu!</a>';
 	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>uge</a>';
 	print '<a class="menu" href="?slug=mostviewed2">Seneste<br>måned</a>';
@@ -311,15 +329,17 @@ function showMenu() {
 	return ;
 }
 
-function showChannelBar($slug, $channels) {
+function showChannelBar($channels) {
+	$params = $_GET;
 	print "\n<p class='text_line'>";
 	foreach ($channels as $key => $value) {
-		print '<a href="?slug='.$slug.'&channel='.$key.'">'.$key.'</a>&nbsp;&nbsp;';
+		$params['channel'] =$key;
+		$paramstring = http_build_query($params);
+		print '<a href="?'.$paramstring.'">'.$key.'</a>&nbsp;&nbsp;';
 	}
 	print "</p>\n";
 	return ;
 }
-
 
 
 function  createInfoLabels($programCard) {
@@ -348,6 +368,10 @@ function  createInfoLabels($programCard) {
 		$infoLabels['OnlineGenreText'] = $programCard['OnlineGenreText'];
 	}
 	return $infoLabels;
+}
+
+function cmp($a,$b) {
+	return strcmp($a['Title'], $b['Title']);
 }
 
 function listBundles($api,$bundles) {
@@ -385,7 +409,7 @@ function listBundles($api,$bundles) {
 	$oldletter="";
 	$j=0;
 	$bundles = $bundles["Data"];
-	usort($bundles, function($a, $b) { return strcmp($a['Title'], $b['Title']);  });
+	usort($bundles, "cmp");
 	foreach ($bundles as $bundle) {
 		if (array_key_exists('ProgramCard', $bundle) and  $bundle['ProgramCard']['PrimaryAssetKind'] != 'VideoResource' ) {
 			# Skipping all bundles without video!
@@ -467,11 +491,16 @@ function listVideos($api,$programCards, $navbar=false) {
 				continue;
 			}
 		}
+		if ($programCard["ChannelType"]!="TV") { 
+			# print "ChannelType: ".$programCard["ChannelType"];
+			# Ignore radio programs
+			continue;
+		}
 		#/programcard/imageuri/urn:dr:mu:programcard:529893b06187a20b90e5e196#
 		$infoLabels = createInfoLabels($programCard); # Format some information
 		$urn=$programCard['Urn'];
 		$iconImage="http://www.dr.dk/mu/programcard/imageuri/".$urn."?width=320";
-		$moreinfourl = $_SERVER['PHP_SELF']."?slug=". urlencode($programCard['Slug'])."&info=1";
+		$moreinfourl = $_SERVER['PHP_SELF']."?slug=". urlencode($programCard['Slug'])."&action=info";
 		# Output video
 		echo "<div class='w'>";
 		echo "<a href='".$moreinfourl."'><img src='".$iconImage."' height=180></a>"; 
@@ -484,7 +513,7 @@ function listVideos($api,$programCards, $navbar=false) {
 		if (!array_key_exists('PrimaryAssetUri', $programCard)) {
 			echo "<p>Video er ikke online endnu</p>";
 		} else {
-			$url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&play=1";
+			$url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=play";
 			echo "<a href='".$url."'>Afspil video</a></p>";
 		}
 		# Link til serier
@@ -562,25 +591,13 @@ function playVideo($api,$programCard) {
 	return null;
 }
 
+
 # 
 # Construction of the page
 #
 $slug=$_GET["slug"];
-$info=$_GET["info"];
-$play=$_GET["play"];
+$action=$_GET["action"];
 $letter=$_GET["letter"];
-
-$api = new TvApi;
-
-# The play action will trigger a redirect using header and die! - if not possible it will just do nothing.
-if ($play) {
-	$programCards = $api->programCard($slug);
-	playVideo($api, $programCards);
-}
-
-showHeader();
-showMenu();
-
 $channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1", 
 "DR2" => "dr.dk/mas/whatson/channel/DR2",
 "DR3" => "dr.dk/mas/whatson/channel/DR3", 
@@ -588,15 +605,35 @@ $channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1",
 "DRKultur" => "dr.dk/mas/whatson/channel/TVK", 
 "Ultra" => "dr.dk/mas/whatson/channel/TVL");
 
-# Set default slug
-if (!$slug) {
-	$slug="mostviewed1";
+$api = new TvApi;
+
+# The play action will trigger a redirect using header and die! - if not possible it will just do nothing.
+if ($action=="play") {
+	$programCards = $api->programCard($slug);
+	playVideo($api, $programCards);
 }
 
-if ($info) {
+if ($_GET["phpinfo"]) {
+	phpinfo();
+	die();
+}
+
+showHeader();
+showMenu();
+
+# Set default slug
+if (!$slug) {
+	$slug="recent";
+}
+
+if ($action=="info") {
 	# If single video - show that
 	$programCards = $api->programCard($slug);
 	listSingleVideo($api, $programCards);
+} elseif ($action=="senestsendt") {
+	$programCards = $api->programCardLatest($limit=200, $offset=$_GET["offset"], $channelurl=$channels[$_GET['channel']]);
+	showChannelBar($channels);
+	listVideos($api, $programCards, $navbar=true);
 } elseif ($_GET["searchtext"] and !$_GET["field"]) { 
 	# If search string - do seach
 	$search= $_GET["searchtext"];
@@ -609,6 +646,10 @@ if ($info) {
 	$search= $_GET["searchtext"];
 	$search = stripslashes($search);
 	$search = urldecode($search);
+	# Check for channel search
+	if ($_GET["field"]=="PrimaryChannel") {
+		$search=$channels[$_GET['searchtext']];
+	}
 	$programCards1 = $api->searchProgramCards($limit=100, $offset=$_GET["offset"], $field=$_GET["field"], $searchtext=$search);
 	$programCards2 = $api->searchProgramCards($limit=100, $offset=($_GET["offset"]+100), $field=$_GET["field"], $searchtext=$search); # Get 50 next
 	if (array_key_exists("Data", $programCards1)) { 
@@ -623,12 +664,12 @@ if ($info) {
 } elseif ($slug=="mostviewed1") {
 	# Show most viewed programcards
 	$programCards = $api->getMostViewedProgramCards($days=7, $channelurl=$channels[$_GET['channel']]);
-	showChannelBar($slug, $channels);
+	showChannelBar($channels);
 	listVideos($api, $programCards);
 } elseif ($slug=="mostviewed2") {
 	# Show most viewed programcards
 	$programCards = $api->getMostViewedProgramCards($days=30, $channelurl=$channels[$_GET['channel']]);
-	showChannelBar($slug, $channels);
+	showChannelBar($channels);
 	listVideos($api, $programCards);
 } elseif ($slug=="recent") {
 	# Show most viewed programcards
@@ -637,7 +678,7 @@ if ($info) {
 } elseif ($slug=="bundles") {
 	$programCards = $api->bundlesWithPublicAsset($letter=$letter, $limit=100, $offset=$_GET["offset"]);
 	listBundles($api, $programCards);
-} elseif (!$info) { 
+} else { 
 	# If no search string - use slug
 	$programCards = $api->programCardRelations($slug, $limit=200, $offset=$_GET["offset"]);
 	if ($programCard["TotalSize"] > 200) {
