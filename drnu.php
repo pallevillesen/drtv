@@ -39,7 +39,6 @@ public function programCardRelations($relationsSlug, $limit=25, $offset=null) {
 	return $this->_http_request($url, $params);
 }
 
-
 public function programCardLatest($limit=25, $offset=null, $channelurl=null) {
 	$params = $params . "PrimaryAssetStartPublish=\$orderby('desc')";
 	$params = $params . "&PrimaryAssetKind='VideoResource'";
@@ -54,7 +53,6 @@ public function programCardLatest($limit=25, $offset=null, $channelurl=null) {
 	$url='http://www.dr.dk/mu/programcard';
 	return $this->_http_request($url, $params);
 }
-
 
 public function searchProgramCards($limit=25, $offset=null, $field=null, $searchtext=null) {
 	if (count(explode(" ",urldecode($searchtext))) > 1) {
@@ -142,7 +140,6 @@ public function getAsset($kind, $programCard) {
 return NULL;
 }
 
-
 public function getMultipleAssets($kind, $programCard) {
 	if (array_key_exists('ProgramCard', $programCard)) {
 		$programCard = $programCard['ProgramCard'];
@@ -158,8 +155,6 @@ public function getMultipleAssets($kind, $programCard) {
 	}
 return NULL;
 }
-
-
 
 public function getRelation($kind, $programCard) {
 	if (array_key_exists('ProgramCard', $programCard)) {
@@ -188,19 +183,15 @@ public function getMultipleRelations($kind, $programCard) {
 return NULL;
 }
 
-
-
-public function getLink($asset, $target = null) {
-	#Loop through list of video links, and get the one with highest bitrate from a specific asset (typical "android")
-	$bitRate = 0;
+public function getLink($asset, $target = "HLS", $format ="mp4") {
+	#{"HardSubtitlesType":"ForeignLanguage","Uri":"http://drod08p-vh.akamaihd.net/i/all/clear/streaming/07/540f9206a11f9d1738f14f07/Gennemsnitlig-Krop---Brysterne_48aeb683fa504597aaa99237314ad8c7_,1126,562,248,.mp4.csmil/master.m3u8",
+    #"FileFormat":"mp4","Target":"HLS"
 	$uri = null;
 	if (array_key_exists('Links', $asset)) {
 		foreach ($asset['Links'] as $link) {
-			if ( ($target==null or $link['Target'] == $target) and (array_key_exists('Bitrate', $link) and $link['Bitrate'] > $bitRate) )  {
+			if (  ($link['Target'] == $target) and ($link['FileFormat'] == $format) )  {
 				$uri = $link['Uri'];
-				$bitRate = $link['Bitrate'];
-			} elseif (!array_key_exists('Bitrate', $link) and $uri==null) {
-				$uri = $link['Uri'];
+				return $uri;
 			}
 		}
 	}
@@ -510,11 +501,12 @@ function listVideos($api,$programCards, $navbar=false) {
 		print "<p>Sendt: ".date('j.n.Y \k\l. H:i',$infoLabels["sent"])."</P>";
 		print "<p>Udløber: ".date('j.n.Y \k\l. H:i',$infoLabels["expires"])."</P>";
 		# Direkte mp4 link redirect
+		print "<a href='".$programCard["PresentationUri"]."'>"."Afspil video"."</A>";
 		if (!array_key_exists('PrimaryAssetUri', $programCard)) {
 			echo "<p>Video er ikke online endnu</p>";
 		} else {
-			$url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=play";
-			echo "<a href='".$url."'>Afspil video</a></p>";
+			$url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=download";
+			echo " - <a href='".$url."'>Download video</a></p>";
 		}
 		# Link til serier
 		echo "<hr>";
@@ -536,30 +528,23 @@ function listSingleVideo($api,$programCard) {
 	$programCard = $programCard["Data"][0];
 	$infoLabels = createInfoLabels($programCard); # Format some information
 	if (array_key_exists('PrimaryAssetUri', $programCard)) {
-		$asset = $api->_http_request($programCard['PrimaryAssetUri'] );
-		$videoUrl = $api->getLink($asset, 'Android');
-		$videoUrl = str_replace('rtsp://om.gss.dr.dk/mediacache/_definst_/mp4:content/', 'http://vodfiles.dr.dk/', $videoUrl);
+		$videoUrl = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=download";
 	} else {
 		$videoUrl=false;
 	}
 	echo "<div class='single_video_container'>";
 	$urn=$programCard['Urn'];
 	$iconImage="http://www.dr.dk/mu/programcard/imageuri/".$urn."?width=800";
-	if ($videoUrl) {
-		print "<a href='".$videoUrl."'><img src='".$iconImage."' width=800></A>";
-		print "<p class='text_line'></p>\n";
-		print "<a href='".$videoUrl."'><h1>".$infoLabels["Title"]."</h1></A>";
-	} else {
-		print "<img src='".$iconImage."' width=800>"; 
-		print "<p class='text_line'></p>\n";
-		print "<h1>".$infoLabels["Title"]."</h1>";
-	}
+	print "<img src='".$iconImage."' width=800>"; 
+	print "<p class='text_line'></p>\n";
+	print "<h1>".$infoLabels["Title"]."</h1>";
 	print "<p>".$programCard["Subtitle"]."</P>";
 	print "<p>".$infoLabels["Description"]."</P>";
 	print "<p>Sendt: ".date('j.n.Y \k\l. H:i',$infoLabels["sent"])."</P>";
 	print "<p>Udløber: ".date('j.n.Y \k\l. H:i',$infoLabels["expires"])."</P>";
+	print "<h1><a href='".$programCard["PresentationUri"]."'>"."Afspil video"."</A>"."</h1>";
 	if ($videoUrl) {
-		print "<h1><a href='".$videoUrl."'>"."Afspil video"."</A>"."</h1>";
+		print "<h1><a href='".$videoUrl."'>"."Download video"."</A>"."</h1>";
 	} else {
 		echo "<p>Video er ikke online endnu</p>";
 	}
@@ -579,18 +564,85 @@ function listSingleVideo($api,$programCard) {
 	return true;
 }
 
-function playVideo($api,$programCard) {
+function downloadVideo($api,$programCard) {
 	$programCard = $programCard["Data"][0];
 	if (array_key_exists('PrimaryAssetUri', $programCard)) {
-		$asset = $api->_http_request($programCard['PrimaryAssetUri'] );
-		$videoUrl = $api->getLink($asset, 'Android');
-		$videoUrl = str_replace('rtsp://om.gss.dr.dk/mediacache/_definst_/mp4:content/', 'http://vodfiles.dr.dk/', $videoUrl);
-		header("Location: $videoUrl");
-		die();
+		$asset = $api->_http_request($programCard['PrimaryAssetUri'] ); # Download content from this link
+		$url = $api->getLink($asset, 'HLS', 'mp4'); # 
+		#$url = "http://drod02f-vh.akamaihd.net/i/all/clear/download/b7/53fd0a6ea11f9d136433e2b7/Den-Store-Bagedyst--1-8-_8188fbea19f94f38a9a24c7108bc4fcc_,1126,562,248,.mp4.csmil/master.m3u8";
+		$streamUrl = getHighBandwidthStream($url);
+		$list = getHlsFiles($streamUrl);
+		$length = count($list);
+		$videotitle = $programCard["Title"].'.mp4';
+		if ($_GET["debug"]) {
+			print "\n<p class='text_line'>&nbsp;</p>\n";
+			print "<pre>";
+			print $url."\n";
+			print $streamUrl."\n";
+			print $length."\n";
+			print $videotitle."\n";
+			var_dump($list);
+			print "Data fetched\n";
+			var_dump($programCard);
+			print "</pre>";
+		} else {
+			#header('Content-type: video/mp4');
+			#header("Content-Disposition: filename='".$videotitle."'"); 
+			header("Content-Description: File Transfer"); 
+			header("Content-Type: application/octet-stream"); 
+			header("Content-Disposition: attachment;filename='".$videotitle."'"); 
+			for ($i = 0; $i < $length; $i++) {
+				$key = $list[$i];
+				$data=file_get_contents($key);
+				print $data;
+			}
+			die();
+		}
 	}
 	return null;
 }
 
+
+//input: string, output: string
+function getHighBandwidthStream($masterUrl) {
+	//get content of master.m3u8
+	$ch = curl_init($masterUrl);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
+	$result = curl_exec($ch);
+	curl_close($ch);
+	//return link to the first stream
+	$result = split("\n", $result);
+	$length = count($result);
+	for ($i = 0; $i < $length; $i++) {
+		$hit = strpos($result[$i], "http");
+		if ($hit !== FALSE) {
+			return $result[$i];
+		}
+	}
+	return FALSE;
+}
+ 
+
+function getHlsFiles($streamUrl) {
+	$ch = curl_init($streamUrl);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
+	$raw = curl_exec($ch);
+	curl_close($ch);
+	//remove comments and unnecessary data
+	$list_raw = split("\n", $raw);
+	$length = count($list_raw);
+	$list = array();
+	for ($i = 0; $i < $length; $i++) {
+		$hit = strpos($list_raw[$i], "#");
+		if ($hit === FALSE) {
+			array_push($list, $list_raw[$i]);
+		}
+	}
+	return $list;
+}
+ 
 
 # 
 # Construction of the page
@@ -608,9 +660,9 @@ $channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1",
 $api = new TvApi;
 
 # The play action will trigger a redirect using header and die! - if not possible it will just do nothing.
-if ($action=="play") {
+if ($action=="download") {
 	$programCards = $api->programCard($slug);
-	playVideo($api, $programCards);
+	downloadVideo($api, $programCards);
 }
 
 if ($_GET["phpinfo"]) {
