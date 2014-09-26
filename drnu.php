@@ -1,8 +1,5 @@
 <?php 
 #
-# This script relies on api code made by Tommy Winther
-# http://tommy.winther.nu
-# 
 #  This Program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2, or (at your option)
@@ -198,6 +195,66 @@ public function getLink($asset, $target = "HLS", $format ="mp4") {
 	return $uri;
 }
 
+public function downloadVideo($programCard) {
+	$programCard = $programCard["Data"][0];
+	if (array_key_exists('PrimaryAssetUri', $programCard)) {
+		$asset = $this->_http_request($programCard['PrimaryAssetUri'] ); # Download content from this link
+		$url = $this->getLink($asset, 'HLS', 'mp4'); # 
+		$streamUrl = $this->_getHighBandwidthStream($url);
+		$list = $this->_getHlsFiles($streamUrl);
+		$length = count($list);
+		$videotitle = $programCard["Title"].'.mp4';
+		header("Content-Description: File Transfer"); 
+		header("Content-Type: application/octet-stream"); 
+		header("Content-Disposition: attachment;filename='".$videotitle."'"); 
+		for ($i = 0; $i < $length; $i++) {
+			$key = $list[$i];
+			$data=file_get_contents($key);
+			echo $data;
+		}
+		die();
+	}
+	return null;
+}
+
+function _getHighBandwidthStream($masterUrl) {
+	//get content of master.m3u8
+	$ch = curl_init($masterUrl);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
+	$result = curl_exec($ch);
+	curl_close($ch);
+	//return link to the first stream
+	$result = split("\n", $result);
+	$length = count($result);
+	for ($i = 0; $i < $length; $i++) {
+		$hit = strpos($result[$i], "http");
+		if ($hit !== FALSE) {
+			return $result[$i];
+		}
+	}
+	return FALSE;
+}
+ 
+function _getHlsFiles($streamUrl) {
+	$ch = curl_init($streamUrl);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
+	$raw = curl_exec($ch);
+	curl_close($ch);
+	//remove comments and unnecessary data
+	$list_raw = split("\n", $raw);
+	$length = count($list_raw);
+	$list = array();
+	for ($i = 0; $i < $length; $i++) {
+		$hit = strpos($list_raw[$i], "#");
+		if ($hit === FALSE) {
+			array_push($list, $list_raw[$i]);
+		}
+	}
+	return $list;
+}
+
 #
 # End of Class definition
 }
@@ -331,7 +388,6 @@ function showChannelBar($channels) {
 	print "</p>\n";
 	return ;
 }
-
 
 function  createInfoLabels($programCard) {
 	$infoLabels = array();
@@ -564,85 +620,6 @@ function listSingleVideo($api,$programCard) {
 	return true;
 }
 
-function downloadVideo($api,$programCard) {
-	$programCard = $programCard["Data"][0];
-	if (array_key_exists('PrimaryAssetUri', $programCard)) {
-		$asset = $api->_http_request($programCard['PrimaryAssetUri'] ); # Download content from this link
-		$url = $api->getLink($asset, 'HLS', 'mp4'); # 
-		#$url = "http://drod02f-vh.akamaihd.net/i/all/clear/download/b7/53fd0a6ea11f9d136433e2b7/Den-Store-Bagedyst--1-8-_8188fbea19f94f38a9a24c7108bc4fcc_,1126,562,248,.mp4.csmil/master.m3u8";
-		$streamUrl = getHighBandwidthStream($url);
-		$list = getHlsFiles($streamUrl);
-		$length = count($list);
-		$videotitle = $programCard["Title"].'.mp4';
-		if ($_GET["debug"]) {
-			print "\n<p class='text_line'>&nbsp;</p>\n";
-			print "<pre>";
-			print $url."\n";
-			print $streamUrl."\n";
-			print $length."\n";
-			print $videotitle."\n";
-			var_dump($list);
-			print "Data fetched\n";
-			var_dump($programCard);
-			print "</pre>";
-		} else {
-			#header('Content-type: video/mp4');
-			#header("Content-Disposition: filename='".$videotitle."'"); 
-			header("Content-Description: File Transfer"); 
-			header("Content-Type: application/octet-stream"); 
-			header("Content-Disposition: attachment;filename='".$videotitle."'"); 
-			for ($i = 0; $i < $length; $i++) {
-				$key = $list[$i];
-				$data=file_get_contents($key);
-				print $data;
-			}
-			die();
-		}
-	}
-	return null;
-}
-
-
-//input: string, output: string
-function getHighBandwidthStream($masterUrl) {
-	//get content of master.m3u8
-	$ch = curl_init($masterUrl);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
-	$result = curl_exec($ch);
-	curl_close($ch);
-	//return link to the first stream
-	$result = split("\n", $result);
-	$length = count($result);
-	for ($i = 0; $i < $length; $i++) {
-		$hit = strpos($result[$i], "http");
-		if ($hit !== FALSE) {
-			return $result[$i];
-		}
-	}
-	return FALSE;
-}
- 
-
-function getHlsFiles($streamUrl) {
-	$ch = curl_init($streamUrl);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
-	$raw = curl_exec($ch);
-	curl_close($ch);
-	//remove comments and unnecessary data
-	$list_raw = split("\n", $raw);
-	$length = count($list_raw);
-	$list = array();
-	for ($i = 0; $i < $length; $i++) {
-		$hit = strpos($list_raw[$i], "#");
-		if ($hit === FALSE) {
-			array_push($list, $list_raw[$i]);
-		}
-	}
-	return $list;
-}
- 
 
 # 
 # Construction of the page
@@ -659,16 +636,7 @@ $channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1",
 
 $api = new TvApi;
 
-# The play action will trigger a redirect using header and die! - if not possible it will just do nothing.
-if ($action=="download") {
-	$programCards = $api->programCard($slug);
-	downloadVideo($api, $programCards);
-}
-
-if ($_GET["phpinfo"]) {
-	phpinfo();
-	die();
-}
+if ($action=="download") { $api->downloadVideo($api->programCard($slug)); }
 
 showHeader();
 showMenu();
