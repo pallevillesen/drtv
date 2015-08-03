@@ -1,4 +1,6 @@
 <?php 
+date_default_timezone_set('Europe/Copenhagen');
+
 #
 #  This Program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -182,7 +184,7 @@ return NULL;
 
 public function getLink($asset, $target = "HLS", $format ="mp4") {
 	#{"HardSubtitlesType":"ForeignLanguage","Uri":"http://drod08p-vh.akamaihd.net/i/all/clear/streaming/07/540f9206a11f9d1738f14f07/Gennemsnitlig-Krop---Brysterne_48aeb683fa504597aaa99237314ad8c7_,1126,562,248,.mp4.csmil/master.m3u8",
-    #"FileFormat":"mp4","Target":"HLS"
+	#"FileFormat":"mp4","Target":"HLS"
 	$uri = null;
 	if (array_key_exists('Links', $asset)) {
 		foreach ($asset['Links'] as $link) {
@@ -197,22 +199,56 @@ public function getLink($asset, $target = "HLS", $format ="mp4") {
 
 public function downloadVideo($programCard) {
 	$programCard = $programCard["Data"][0];
-	if (array_key_exists('PrimaryAssetUri', $programCard)) {
-		$asset = $this->_http_request($programCard['PrimaryAssetUri'] ); # Download content from this link
-		$url = $this->getLink($asset, 'HLS', 'mp4'); # 
-		$streamUrl = $this->_getHighBandwidthStream($url);
-		$list = $this->_getHlsFiles($streamUrl);
-		$length = count($list);
-		$videotitle = $programCard["Title"].'.mp4';
-		header("Content-Description: File Transfer"); 
-		header("Content-Type: application/octet-stream"); 
-		header("Content-Disposition: attachment;filename='".$videotitle."'"); 
-		for ($i = 0; $i < $length; $i++) {
-			$key = $list[$i];
-			$data=file_get_contents($key);
-			echo $data;
+	#if (array_key_exists('Assets', $programCard)) {
+	#	$asset      = $programCard['Assets'][0];             # Get assets directly from programcard
+	#} else {
+		if (array_key_exists('PrimaryAssetUri', $programCard)) {
+			$asseturl   = $programCard['PrimaryAssetUri'];   # Get url of the primaryasset: typically something like: 
+			$asset      = $this->_http_request($asseturl);   # Download assets from this link
 		}
-		die();
+	#}
+	$m3u8url    = $this->getLink($asset, 'HLS', 'mp4');      # From the asset, extract the url of the m3u8 file
+	$streamUrl  = $this->_getHighBandwidthStream($m3u8url);  # From the m3u8 file - get the high bandwidth url
+	$list       = $this->_getHlsFiles($streamUrl);           # From the high bandwidth url, get the list of all the 10 second bits
+	$length     = count($list);                              # Number of 10 second bits
+	$videotitle = $programCard["Title"].'.mp4';
+	if ($_GET["debug"]) {
+			print "\n<p class='text_line'>&nbsp;</p>\n";
+			print "<h1>Asseturl : $asseturl</h1>";
+			print "<h1>m3u8url  : $m3u8url</h1>";
+			print "<h1>StreamUrl: $streamUrl</h1>";
+            print "<h1>List: $list</h1>";
+			print "<h1>Pieces in stream: $length, $videotitle</h1>";
+			print "<h1>Asset</h1>";
+			print "<h1>Bits</h1>";
+			print "<pre>";
+			for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
+				$key  = $list[$i];
+				print $i."/".$length." : ".$key."\n";
+				$data = file_get_contents($key);
+				print "Size: ".strlen($data)."\n";
+			}
+			print "</pre>";
+
+			print "<pre>";
+			var_dump($asset);
+			print "</pre>";
+			print "<h1>Programcard</h1>";
+			print "<pre>";
+			var_dump($programCard);
+			print "</pre>";
+			phpinfo();
+			die();
+	} else {
+			header("Content-Description: File Transfer"); 
+			header("Content-Type: application/octet-stream"); 
+			header("Content-Disposition: attachment;filename='".$videotitle."'"); 
+			for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
+				$key  = $list[$i];
+				$data = file_get_contents($key);
+				echo $data;
+			}
+			die();
 	}
 	return null;
 }
@@ -225,11 +261,11 @@ function _getHighBandwidthStream($masterUrl) {
 	$result = curl_exec($ch);
 	curl_close($ch);
 	//return link to the first stream
-	$result = split("\n", $result);
+	$result = explode("\n", $result);
 	$length = count($result);
 	for ($i = 0; $i < $length; $i++) {
 		$hit = strpos($result[$i], "http");
-		if ($hit !== FALSE) {
+		if ($hit===0) {
 			return $result[$i];
 		}
 	}
@@ -243,7 +279,7 @@ function _getHlsFiles($streamUrl) {
 	$raw = curl_exec($ch);
 	curl_close($ch);
 	//remove comments and unnecessary data
-	$list_raw = split("\n", $raw);
+	$list_raw = explode("\n", $raw);
 	$length = count($list_raw);
 	$list = array();
 	for ($i = 0; $i < $length; $i++) {
@@ -360,23 +396,6 @@ img {
 
 }
 
-function showMenu() {
-	print '<a class="menu" href="?slug=hoejdepunkter">Højdepunkter</a>';
-	print '<a class="menu" href="?slug=forpremierer">Forpremierer</a>';
-	print '<a class="menu" href="?slug=test-spotliste">Spotlist</a>';
-	print '<a class="menu" href="?action=senestsendt">Senest<br>sendt</a>';
-	print '<a class="menu" href="?slug=recent">Ses af andre<br>lige nu!</a>';
-	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>uge</a>';
-	print '<a class="menu" href="?slug=mostviewed2">Seneste<br>måned</a>';
-	print '<a class="menu" href="?slug=bundles">Serier</a>';
-	print '<form class="menu" method=GET action="">';
-	print '<INPUT type=text name=searchtext size=10 maxlength=255 value="'.$_GET["searchtext"].'">';
-	print '<input type="submit" value="Søg">';
-	print '</form>';
-	print "\n<p class='text_line'>&nbsp;</p>\n";
-	return ;
-}
-
 function showChannelBar($channels) {
 	$params = $_GET;
 	print "\n<p class='text_line'>";
@@ -403,10 +422,10 @@ function  createInfoLabels($programCard) {
 		$infoLabels['Subtitle'] = $programCard['Subtitle'];
 	}
 	if (array_key_exists('PrimaryBroadcastStartTime', $programCard)) {
-		$infoLabels['sent'] = strtotime($programCard['PrimaryBroadcastStartTime']);
+		$infoLabels['sent'] = strtotime($programCard['PrimaryBroadcastStartTime'], $now=time());
 	}
 	if (array_key_exists('PrimaryAssetEndPublish', $programCard)) {
-		$infoLabels['expires'] = strtotime($programCard['PrimaryAssetEndPublish']);
+		$infoLabels['expires'] = strtotime($programCard['PrimaryAssetEndPublish'], $now=time());
 	}
 	if (array_key_exists('GenreText', $programCard)) {
 		$infoLabels['GenreText'] = $programCard['GenreText'];
@@ -534,7 +553,7 @@ function listVideos($api,$programCards, $navbar=false) {
 		} 
 		if (array_key_exists('PrimaryAssetEndPublish', $programCard)) {
 			# Also detect if it is obsolete - ["PrimaryAssetEndPublish"]=> "2013-04-14T12:10:00Z"
-			if (strtotime($programCard['PrimaryAssetEndPublish']) < time() ) {
+			if (strtotime($programCard['PrimaryAssetEndPublish'], $now=time()) < time() ) {
 				continue;
 			}
 		}
@@ -620,6 +639,23 @@ function listSingleVideo($api,$programCard) {
 	return true;
 }
 
+
+function showMenu() {
+	#print '<a class="menu" href="?slug=hoejdepunkter">Højdepunkter</a>';
+	#print '<a class="menu" href="?slug=forpremierer">Forpremierer</a>';
+	#print '<a class="menu" href="?Relations.Slug=test-spotliste">Spotlist</a>';
+	print '<a class="menu" href="?action=senestsendt">Senest<br>sendt</a>';
+	print '<a class="menu" href="?slug=recent">Ses af andre<br>lige nu!</a>';
+	print '<a class="menu" href="?slug=mostviewed1">Seneste<br>uge</a>';
+	print '<a class="menu" href="?slug=mostviewed2">Seneste<br>måned</a>';
+	print '<a class="menu" href="?slug=bundles">Serier</a>';
+	print '<form class="menu" method=GET action="">';
+	print '<INPUT type=text name=searchtext size=10 maxlength=255 value="'.$_GET["searchtext"].'">';
+	print '<input type="submit" value="Søg">';
+	print '</form>';
+	print "\n<p class='text_line'>&nbsp;</p>\n";
+	return ;
+}
 
 # 
 # Construction of the page
@@ -711,13 +747,14 @@ if ($action=="info") {
 if ($_GET["debug"]) {
 	print "\n<p class='text_line'>&nbsp;</p>\n";
 	print "<pre>";
-	echo "Get:";
+	echo "<h1>Get:</h1>";
 	var_dump($_GET);
 	echo "Post:";
 	var_dump($_POST);
 	print "Data fetched\n";
 	var_dump($programCards);
 	print "</pre>";
+	phpinfo();
 }
 
 
