@@ -83,8 +83,8 @@ public function searchProgramCards($limit=25, $offset=null, $field=null, $search
 
 public function getMostViewedProgramCards($days, $channelurl=null) {
 	$params = 'days='.$days;
-	$params = $params . '&ChannelType=TV';
-	$params = $params . '&count=50';
+	$params = $params . '&channeltype=TV';
+	$params = $params . '&count=25';
 	if ($channelurl) {
 		$params= $params . '&Channel='.rawurlencode(urldecode($channelurl));
 	}
