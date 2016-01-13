@@ -185,72 +185,113 @@ return NULL;
 public function getLink($asset, $target = "HLS", $format ="mp4") {
 	#{"HardSubtitlesType":"ForeignLanguage","Uri":"http://drod08p-vh.akamaihd.net/i/all/clear/streaming/07/540f9206a11f9d1738f14f07/Gennemsnitlig-Krop---Brysterne_48aeb683fa504597aaa99237314ad8c7_,1126,562,248,.mp4.csmil/master.m3u8",
 	#"FileFormat":"mp4","Target":"HLS"
-	$uri = null;
 	if (array_key_exists('Links', $asset)) {
 		foreach ($asset['Links'] as $link) {
 			if (  ($link['Target'] == $target) and ($link['FileFormat'] == $format) )  {
-				$uri = $link['Uri'];
-				return $uri;
+				return $link['Uri'];
 			}
 		}
-	}
-	return $uri;
-}
-
-public function downloadVideo($programCard) {
-	$programCard = $programCard["Data"][0];
-	#if (array_key_exists('Assets', $programCard)) {
-	#	$asset      = $programCard['Assets'][0];             # Get assets directly from programcard
-	#} else {
-		if (array_key_exists('PrimaryAssetUri', $programCard)) {
-			$asseturl   = $programCard['PrimaryAssetUri'];   # Get url of the primaryasset: typically something like: 
-			$asset      = $this->_http_request($asseturl);   # Download assets from this link
-		}
-	#}
-	$m3u8url    = $this->getLink($asset, 'HLS', 'mp4');      # From the asset, extract the url of the m3u8 file
-	$streamUrl  = $this->_getHighBandwidthStream($m3u8url);  # From the m3u8 file - get the high bandwidth url
-	$list       = $this->_getHlsFiles($streamUrl);           # From the high bandwidth url, get the list of all the 10 second bits
-	$length     = count($list);                              # Number of 10 second bits
-	$videotitle = $programCard["Title"].'.mp4';
-	if ($_GET["debug"]) {
-			print "\n<p class='text_line'>&nbsp;</p>\n";
-			print "<h1>Asseturl : $asseturl</h1>";
-			print "<h1>m3u8url  : $m3u8url</h1>";
-			print "<h1>StreamUrl: $streamUrl</h1>";
-            print "<h1>List: $list</h1>";
-			print "<h1>Pieces in stream: $length, $videotitle</h1>";
-			print "<h1>Asset</h1>";
-			print "<h1>Bits</h1>";
-			print "<pre>";
-			for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
-				$key  = $list[$i];
-				print $i."/".$length." : ".$key."\n";
-				$data = file_get_contents($key);
-				print "Size: ".strlen($data)."\n";
-			}
-			print "</pre>";
-
-			print "<pre>";
-			var_dump($asset);
-			print "</pre>";
-			print "<h1>Programcard</h1>";
-			print "<pre>";
-			var_dump($programCard);
-			print "</pre>";
-			phpinfo();
-			die();
-	} else {
-			header("Content-Description: File Transfer"); 
-			header("Content-Type: application/octet-stream"); 
-			header("Content-Disposition: attachment;filename='".$videotitle."'"); 
-			for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
-				$key  = $list[$i];
-				$data = file_get_contents($key);
-				echo $data;
-			}
-			die();
 	}
 	return null;
+}
+
+
+public function getSubtitleLink($asset, $language = "Danish") {
+    #return $asset['SubtitlesList'][0]["Uri"];
+    if (array_key_exists('SubtitlesList', $asset)) {
+        foreach ($asset['SubtitlesList'] as $link) {
+            if (  ($link['Language']==$language) )  {
+                return $link['Uri'];
+            }
+        }
+    }
+    return NULL;
+}
+
+public function downloadVideo($programCard, $downloadsubtitle=FALSE) {
+    $programCard = $programCard["Data"][0];
+    #if (array_key_exists('Assets', $programCard)) {
+    #	$asset      = $programCard['Assets'][0];             # Get assets directly from programcard
+    #} else {
+    if (array_key_exists('PrimaryAssetUri', $programCard)) {
+        $asseturl   = $programCard['PrimaryAssetUri'];   # Get url of the primaryasset: typically something like: 
+        $asset      = $this->_http_request($asseturl);   # Download assets from this link
+    }
+    #}
+    $m3u8url     = $this->getLink($asset, 'HLS', 'mp4');      # From the asset, extract the url of the m3u8 file
+    $subtitleurl = $this->getSubtitleLink($asset, 'Danish');  # Get link to subtitle file - save it as srt (it's webvtt but kodi will play it if names srt
+    $streamUrl   = $this->_getHighBandwidthStream($m3u8url);  # From the m3u8 file - get the high bandwidth url
+    $list        = $this->_getHlsFiles($streamUrl);           # From the high bandwidth url, get the list of all the 10 second bits
+    $length      = count($list);                              # Number of 10 second bits
+    $videotitle  = $programCard["Title"];
+    if ($downloadsubtitle==FALSE) {
+        if ($_GET["debug"]) {
+            print "\n<p class='text_line'>&nbsp;</p>\n";
+            print "<h1>Asseturl : $asseturl</h1>";
+            print "<h1>m3u8url  : $m3u8url</h1>";
+            print "<h1>StreamUrl: $streamUrl</h1>";
+            print "<h1>List: $list</h1>";
+            print "<h1>Pieces in stream: $length, $videotitle</h1>";
+            print "<h1>Bits</h1>";
+            print "<pre>";
+            for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
+                $key  = $list[$i];
+                print $i."/".$length." : ".$key."\n";
+                $data = file_get_contents($key);
+                print "Size: ".strlen($data)."\n";
+            }
+            print "</pre>";
+            print "<h1>Asset</h1>";
+            print "<pre>";
+            var_dump($asset);
+            print "</pre>";
+            print "<h1>Programcard</h1>";
+            print "<pre>";
+            var_dump($programCard);
+            print "</pre>";
+            phpinfo();
+            die();
+        } else {
+            header("Content-Description: File Transfer"); 
+            header("Content-Type: application/octet-stream"); 
+            header("Content-Disposition: attachment;filename='".$videotitle.".mp4'"); 
+            for ($i = 0; $i < $length; $i++) {                               # Loop through all 10 second bits and echo them out into one stream
+                $key  = $list[$i];
+                $data = file_get_contents($key);
+                echo $data;
+            }
+            die();
+       }
+    }
+    if ($downloadsubtitle==TRUE) {
+        if ($_GET["debug"]) {
+            print "\n<p class='text_line'>&nbsp;</p>\n";
+            print "<h1>Subtitleurl : $subtitleurl</h1>";
+            print "<h1>Asset</h1>";
+            print "<pre>";
+            var_dump($asset);
+            print "</pre>";
+            print "<h1>Programcard</h1>";
+            print "<pre>";
+            var_dump($programCard);
+            print "</pre>";
+            print "<h1>Subtitlecontent</h1>";
+            print "<pre>";
+            $data = file_get_contents($subtitleurl);
+            echo $data;
+            print "</pre>";
+            phpinfo();
+            die();
+        } else {        
+            header("Content-Description: File Transfer"); 
+            header("Content-Type: application/octet-stream"); 
+            header("Content-Disposition: attachment;filename='".$videotitle.".srt'"); 
+            $data = file_get_contents($subtitleurl);
+            echo $data;
+            die();
+        }
+    }
+    return null;
 }
 
 function _getHighBandwidthStream($masterUrl) {
@@ -581,7 +622,9 @@ function listVideos($api,$programCards, $navbar=false) {
 			echo "<p>Video er ikke online endnu</p>";
 		} else {
 			$url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=download";
-			echo " - <a href='".$url."'>Download video</a></p>";
+			echo " - <a href='".$url."'>Download video</a>";
+            $url = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=downloadsubtitle";
+            echo " - <a href='".$url."'>Download subtitle</a></p>";
 		}
 		# Link til serier
 		echo "<hr>";
@@ -603,7 +646,7 @@ function listSingleVideo($api,$programCard) {
 	$programCard = $programCard["Data"][0];
 	$infoLabels = createInfoLabels($programCard); # Format some information
 	if (array_key_exists('PrimaryAssetUri', $programCard)) {
-		$videoUrl = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug']."&action=download";
+		$videoUrl = $_SERVER['PHP_SELF']."?slug=". $programCard['Slug'];
 	} else {
 		$videoUrl=false;
 	}
@@ -619,7 +662,8 @@ function listSingleVideo($api,$programCard) {
 	print "<p>Udløber: ".date('j.n.Y \k\l. H:i',$infoLabels["expires"])."</P>";
 	print "<h1><a href='".$programCard["PresentationUri"]."'>"."Afspil video"."</A>"."</h1>";
 	if ($videoUrl) {
-		print "<h1><a href='".$videoUrl."'>"."Download video"."</A>"."</h1>";
+		print "<h1><a href='".$videoUrl."&action=download"."'>"."Download video"."</A>"."</h1>";
+        print "<h1><a href='".$videoUrl."&action=downloadsubtitle"."'>"."Download subtitle"."</A>"."</h1>";
 	} else {
 		echo "<p>Video er ikke online endnu</p>";
 	}
@@ -672,7 +716,8 @@ $channels= array("DR1" => "dr.dk/mas/whatson/channel/DR1",
 
 $api = new TvApi;
 
-if ($action=="download") { $api->downloadVideo($api->programCard($slug)); }
+if ($action=="download") { $api->downloadVideo($api->programCard($slug), $downloadsubtitle=FALSE); }
+if ($action=="downloadsubtitle") { $api->downloadVideo($api->programCard($slug), $downloadsubtitle=TRUE); }
 
 showHeader();
 showMenu();
